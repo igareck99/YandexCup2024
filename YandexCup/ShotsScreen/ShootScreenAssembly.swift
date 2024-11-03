@@ -2,11 +2,13 @@ import SwiftUI
 
 enum ShootScreenAssembly {
     
-    static func build(_ lines: Binding<[[Line]]>,
-                      onRemove: @escaping (Int) -> Void) -> some View {
+    static func build(_ lines: [[Line]],
+                      onRemove: @escaping (Int) -> Void,
+                      onRemoveAll: @escaping () -> Void) -> some View {
         print("Inited")
-        let vm = ShootScreenViewModel(onRemove: onRemove)
-        let view = ShootScreenView(viewModel: vm, lines: lines)
+        let vm = ShootScreenViewModel(lines: lines, onRemove: onRemove,
+                                      onRemoveAll: onRemoveAll)
+        let view = ShootScreenView(viewModel: vm)
         return view
     }
 }

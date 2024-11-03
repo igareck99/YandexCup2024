@@ -58,10 +58,8 @@ extension CanvasView.Coordinator {
         let control1Y = canvas.bounds.height * 0.2
         let control2X = canvas.bounds.width * 0.7
         let control2Y = canvas.bounds.height * 0.8
-
         var bezierPoints: [CGPoint] = []
-        let numberOfSegments = 100 // Количество точек для построения плавной кривой
-
+        let numberOfSegments = 100
         for t in stride(from: 0.0, to: 1.0, by: 1.0 / Double(numberOfSegments)) {
             let x = pow(1 - t, 3) * startX + 3 * pow(1 - t, 2) * t * control1X + 3 * (1 - t) * pow(t, 2) * control2X + pow(t, 3) * endX
             let y = pow(1 - t, 3) * startY + 3 * pow(1 - t, 2) * t * control1Y + 3 * (1 - t) * pow(t, 2) * control2Y + pow(t, 3) * endY

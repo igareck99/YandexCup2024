@@ -113,6 +113,7 @@ extension MainViewModel: MainViewModelProtocol {
     
     
     func startPlaying() {
+        self.queue.cancelAllOperations()
         self.isDrawing = false
         withAnimation(.spring(duration: 0.5)) {
             self.isHiddenForPlaying = true
@@ -120,32 +121,45 @@ extension MainViewModel: MainViewModelProtocol {
         self.isPlayActive = false
         self.isPauseActive = true
         if let lines = self.canvasCoordinator?.lines,
+           lines != self.canvasStorage.last,
            !lines.isEmpty {
             canvasStorage.append(lines)
         }
         queue.isSuspended = true
+        var images = Set<UIImage>()
         self.canvasStorage.forEach { value in
             let operation = BlockOperation {
                 guard !self.queue.isSuspended else { return }
                 if value != self.canvasStorage.first {
-                    Thread.sleep(forTimeInterval: 1.2)
+                    Thread.sleep(forTimeInterval: 1 / 20)
                 }
                 OperationQueue.main.addOperation {
                     guard !self.queue.isSuspended else { return }
-                    withAnimation(.spring(duration: 0.25)) {
-                        self.canvasCoordinator?.lines = value
-                        self.canvasCoordinator?.redrawCanvas()
+                    self.canvasCoordinator?.lines = value
+                    self.canvasCoordinator?.redrawCanvas()
+                    if let image = self.canvasCoordinator?.canvas.image {
+                        images.insert(image)
                     }
-                }
-            }
-            operation.completionBlock =  {
-                if value == self.canvasStorage.last {
-                    Task { @MainActor in
-                        self.isPlayActive = true
+                    guard !self.queue.isSuspended else { return }
+                    if value == self.canvasStorage.last {
+                        Task { @MainActor in
+                            self.startPlaying()
+                            
+                            if let gifData = GifGenerator().createGIF(from: Array(images), frameDelay: 0.1) {
+                                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                                let gifURL = documentsDirectory.appendingPathComponent("animated.gif")
+                                
+                                do {
+                                    try gifData.write(to: gifURL)
+                                    print("GIF создан и сохранен по пути: \(gifURL)")
+                                } catch {
+                                    print("Ошибка при сохранении GIF: \(error)")
+                                }
+                            }
+
+                            print("skaskas  \(images.count)")
+                        }
                     }
-                    print("Последняя Операция завершена")
-                } else {
-                    print("Операция завершена")
                 }
             }
             queue.addOperation(operation)
