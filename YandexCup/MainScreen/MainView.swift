@@ -99,7 +99,7 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                     )
                 }
             })
-            .textFieldAlert(isShowing: $isShowingAlert, text: $text, title: "Alert!")
+            .textFieldAlert(isShowing: $isShowingAlert, text: $text, title: "Введите количество элементов")
             .background {
                 colorScheme == .dark ? Color.black : .white
             }
@@ -118,14 +118,6 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
         HStack(alignment: .center) {
             HStack(spacing: 8) {
                 Spacer()
-                Button {
-                    currentAlert = .restartAnimation
-                } label: {
-                    Image(systemName: "arrowshape.zigzag.right")
-                        .resizable()
-                        .frame(width: 22, height: 22, alignment: .center)
-                        .tint(colorScheme == .dark ? .white : .black)
-                }
                 Button {
                     viewModel.stopPresentation()
                 } label: {
@@ -290,7 +282,7 @@ struct TextFieldAlert<Presenting>: View where Presenting: View {
                 .padding()
                 .background(Color.white)
                 .frame(
-                    width: deviceSize.size.width*0.5,
+                    width: deviceSize.size.width*0.75,
                     height: deviceSize.size.height*0.3
                 )
                 .shadow(radius: 1)

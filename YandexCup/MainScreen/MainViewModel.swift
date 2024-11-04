@@ -217,7 +217,6 @@ extension MainViewModel: MainViewModelProtocol {
                 }
                 let randomNumber = Int.random(in: 1...360)
                 let step = Int.random(in: 1...3)
-                print("asklaskl  \(randomNumber)")
                 switch step {
                 case 1:
                     self.canvasCoordinator?.addTriangle(angle: CGFloat(randomNumber))

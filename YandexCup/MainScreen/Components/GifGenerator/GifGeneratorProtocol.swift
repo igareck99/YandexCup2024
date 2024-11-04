@@ -3,5 +3,5 @@ import Foundation
 
 protocol GifGeneratorProtocol {
     
-    func gifCall(_ lines: [[Line]], delay: Double, completion: (Data?) -> Void)
+    func gifCall(_ lines: [[Line]], delay: Double, completion: @escaping (Data?) -> Void)
 }

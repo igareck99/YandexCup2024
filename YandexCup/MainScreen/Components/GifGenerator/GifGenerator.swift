@@ -6,6 +6,7 @@ import MobileCoreServices
 final class GifGenerator: GifGeneratorProtocol {
     
     var currentCanvas: CanvasView.Coordinator? = nil
+    let group = DispatchGroup()
     
     private func addBackgroundImage(to images: [UIImage], backgroundImage: UIImage) -> [UIImage] {
         return images.map { image in
@@ -49,37 +50,45 @@ final class GifGenerator: GifGeneratorProtocol {
     
     
     func gifCall(_ lines: [[Line]], delay: Double,
-                 completion: (Data?) -> Void) {
-        DispatchQueue.global(qos: .userInitiated).sync {
+                 completion: @escaping (Data?) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
             var images = [UIImage]()
-            lines.forEach {
-                self.currentCanvas = CanvasView.Coordinator(canvas: UIImageView(),
-                                                            tool: .pencil,
-                                                            color: .red,
-                                                            lineWidth: 1,
-                                                            isDrawing: false, onLineAdded: { _ in
-                    
-                })
-                self.currentCanvas?.lines = $0
-                self.currentCanvas?.canvas.bounds = CGRect(x: 358, y: 628, width: 358, height: 628)
-                self.currentCanvas?.redrawCanvas()
-                if let image = self.currentCanvas?.canvas.image {
-                    images.append(image)
+            lines.forEach { value in
+                self.group.enter()
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.currentCanvas = CanvasView.Coordinator(canvas: UIImageView(),
+                                                                tool: .pencil,
+                                                                color: .red,
+                                                                lineWidth: 1,
+                                                                isDrawing: false, onLineAdded: { _ in
+                        
+                    })
+                    self.currentCanvas?.lines = value
+                    self.currentCanvas?.canvas.bounds = CGRect(x: 358, y: 628, width: 358, height: 628)
+                    self.currentCanvas?.redrawCanvas()
+                    if let image = self.currentCanvas?.canvas.image {
+                        images.append(image)
+                        group.leave()
+                    }
                 }
             }
-            if let bgImage = UIImage(named: "paper-background") {
-                images = addBackgroundImage(to: images, backgroundImage: bgImage)
-            }
-            if let gifData = GifGenerator().createGIF(from: images, frameDelay: 0.07) {
-                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                let gifURL = documentsDirectory.appendingPathComponent("animated.gif")
-                do {
-                    try gifData.write(to: gifURL)
-                    print("GIF создан и сохранен по пути: \(gifURL)")
-                    completion(gifData)
-                } catch {
-                    print("Ошибка при сохранении GIF: \(error)")
-                    completion(nil)
+            group.notify(queue: .main) {
+                if let bgImage = UIImage(named: "paper-background") {
+                    images = self.addBackgroundImage(to: images, backgroundImage: bgImage)
+                }
+                if let gifData = GifGenerator().createGIF(from: images, frameDelay: 0.07) {
+                    let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                    let gifURL = documentsDirectory.appendingPathComponent("animated.gif")
+                    do {
+                        try gifData.write(to: gifURL)
+                        debugPrint("GIF создан и сохранен по пути: \(gifURL)")
+                        completion(gifData)
+                    } catch {
+                        debugPrint("Ошибка при сохранении GIF: \(error)")
+                        completion(nil)
+                    }
                 }
             }
         }
