@@ -22,6 +22,7 @@ protocol MainViewModelProtocol: ObservableObject {
     var canvasesCoordinator: [CanvasView.Coordinator?] { get set }
     var linesStorage: LinesCurrentDrawStorage { get }
     func removeShoot(_ index: Int)
+    func generateGif(_ completion: @escaping (Data?) -> Void)
 }
 
 final class MainViewModel {
@@ -43,8 +44,10 @@ final class MainViewModel {
     private var selectedShoot: Int?
     private var subscriptions = Set<AnyCancellable>()
     private let queue = OperationQueue()
+    private let gifGenerator: GifGeneratorProtocol
     
-    init() {
+    init(gifGenerator: GifGeneratorProtocol = GifGenerator()) {
+        self.gifGenerator = gifGenerator
         self.bindInput()
     }
     
@@ -144,20 +147,6 @@ extension MainViewModel: MainViewModelProtocol {
                     if value == self.canvasStorage.last {
                         Task { @MainActor in
                             self.startPlaying()
-                            
-                            if let gifData = GifGenerator().createGIF(from: Array(images), frameDelay: 0.1) {
-                                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                                let gifURL = documentsDirectory.appendingPathComponent("animated.gif")
-                                
-                                do {
-                                    try gifData.write(to: gifURL)
-                                    print("GIF создан и сохранен по пути: \(gifURL)")
-                                } catch {
-                                    print("Ошибка при сохранении GIF: \(error)")
-                                }
-                            }
-
-                            print("skaskas  \(images.count)")
                         }
                     }
                 }
@@ -205,5 +194,14 @@ extension MainViewModel: MainViewModelProtocol {
     
     func selectShoot(_ index: Int) {
         selectedShoot = index
+    }
+    
+    func generateGif(_ completion: @escaping (Data?) -> Void) {
+        gifGenerator.gifCall(self.canvasStorage,
+                             delay: 0.1) { url in
+            DispatchQueue.main.async {
+                completion(url)
+            }
+        }
     }
 }

@@ -38,4 +38,6 @@ extension Color {
     static let bluesaphire = Color(hex: "1976D2")
     static let flameburst = Color(hex: "FF3D00")
     static let urbangrey = Color(hex: "8B8B8B")
+    static let sliderLeft = Color(hex: "9CCB0C")
+    static let sliderRight = Color(hex: "EAFFAB")
 }

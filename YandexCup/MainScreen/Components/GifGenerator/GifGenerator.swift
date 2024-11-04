@@ -3,9 +3,11 @@ import Foundation
 import ImageIO
 import MobileCoreServices
 
-final class GifGenerator {
+final class GifGenerator: GifGeneratorProtocol {
     
-    func addBackgroundImage(to images: [UIImage], backgroundImage: UIImage) -> [UIImage] {
+    var currentCanvas: CanvasView.Coordinator? = nil
+    
+    private func addBackgroundImage(to images: [UIImage], backgroundImage: UIImage) -> [UIImage] {
         return images.map { image in
             let size = image.size
             UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
@@ -17,7 +19,7 @@ final class GifGenerator {
         }
     }
 
-    func createGIF(from images: [UIImage], frameDelay: Double, loopCount: Int = 0) -> Data? {
+    private func createGIF(from images: [UIImage], frameDelay: Double, loopCount: Int = 0) -> Data? {
         guard !images.isEmpty else { return nil }
         let fileProperties: CFDictionary = [
             kCGImagePropertyGIFDictionary: [
@@ -46,7 +48,42 @@ final class GifGenerator {
     }
     
     
-    func gifCall() {
-        
+    func gifCall(_ lines: [[Line]], delay: Double,
+                 completion: (Data?) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).sync {
+            var images = [UIImage]()
+            lines.forEach {
+                self.currentCanvas = CanvasView.Coordinator(canvas: UIImageView(),
+                                                            tool: .pencil,
+                                                            color: .red,
+                                                            lineWidth: 1,
+                                                            isDrawing: false, onLineAdded: { _ in
+                    
+                })
+                self.currentCanvas?.lines = $0
+                self.currentCanvas?.canvas.bounds = CGRect(x: 358, y: 628, width: 358, height: 628)
+                self.currentCanvas?.redrawCanvas()
+                if let image = self.currentCanvas?.canvas.image {
+                    images.append(image)
+                }
+            }
+            if let bgImage = UIImage(named: "paper-background") {
+                images = addBackgroundImage(to: images, backgroundImage: bgImage)
+            }
+            if let gifData = GifGenerator().createGIF(from: images, frameDelay: 0.07) {
+                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let gifURL = documentsDirectory.appendingPathComponent("animated.gif")
+                do {
+                    try gifData.write(to: gifURL)
+                    print("GIF создан и сохранен по пути: \(gifURL)")
+                    completion(gifData)
+                } catch {
+                    print("Ошибка при сохранении GIF: \(error)")
+                    completion(nil)
+                }
+            }
+        }
     }
 }
+
+

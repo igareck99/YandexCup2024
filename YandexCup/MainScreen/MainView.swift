@@ -9,6 +9,7 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
     @State private var thickness: Double = 10.0
     @State private var currentAlert: CurrentAlert?
+    @State private var showMenu = false
 
     var body: some View {
         NavigationView {
@@ -40,7 +41,8 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                             viewModel.currentBottomItem = nil
                         })
                     case .ruler:
-                        Slider(value: $viewModel.lineWidth, in: 1...25)
+                        GradientSliderRepresentable(selectedWidth: $viewModel.lineWidth)
+                            .padding(.bottom, 12)
                     }
                 }
                 .padding(.top, 32)
@@ -132,7 +134,6 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
         HStack(alignment: .center) {
             HStack(spacing: 8) {
                 Button {
-                    // viewModel.canvasCoordinator!.undoLastLine()
                     viewModel.linesStorage.previous()
                 } label: {
                     Image("right-arrow-active")
@@ -162,24 +163,45 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                 }.disabled((viewModel.canvasCoordinator?.lines ?? []).isEmpty)
                 Button {
                     self.currentAlert = .removeScreen
+                    viewModel.linesStorage.resetLines()
                 } label: {
                     Image("trash")
                         .renderingMode(.template)
                         .foregroundColor(getColor(!(viewModel.canvasCoordinator?.lines ?? []).isEmpty))
                 }.disabled((viewModel.canvasCoordinator?.lines ?? []).isEmpty)
-                Button {
-                    if let lines = viewModel.canvasCoordinator?.lines {
-                        viewModel.canvasStorage.append(lines)
+                Menu {
+                    if !(viewModel.canvasCoordinator?.lines ?? []).isEmpty {
+                        Button {
+                            if let lines = viewModel.canvasCoordinator?.lines {
+                                viewModel.canvasStorage.append(lines)
+                            }
+                            viewModel.canvasesCoordinator.append(viewModel.canvasCoordinator)
+                            viewModel.canvasCoordinator?.clearCanvas()
+                            viewModel.linesStorage.resetLines()
+                        } label: {
+                            Label {
+                                Text("Создать новый рисунок")
+                            } icon: {
+                                Image("add-doc")
+                                    .renderingMode(.template)
+                                    .foregroundColor(getColor(!(viewModel.canvasCoordinator?.lines ?? []).isEmpty))
+                            }
+                        }
                     }
-                    viewModel.canvasesCoordinator.append(viewModel.canvasCoordinator)
-                    viewModel.canvasCoordinator?.clearCanvas()
-                    viewModel.linesStorage.resetLines()
+                    Button {
+                        if viewModel.canvasStorage.isEmpty {
+                            return
+                        }
+                        viewModel.generateGif({ _ in
+                        })
+                    } label: {
+                        Label("Создать Gif", systemImage: "folder.badge.plus")
+                    }
                 } label: {
                     Image("add-doc")
                         .renderingMode(.template)
-                        .foregroundColor(getColor(!(viewModel.canvasCoordinator?.lines ?? []).isEmpty))
+                        .foregroundColor(getColor(true))
                 }
-                // 100000000
                 NavigationLink(
                     destination: LazyView(ShootScreenAssembly.build(viewModel.canvasStorage, onRemove: { index in
                         viewModel.removeShoot(index)
