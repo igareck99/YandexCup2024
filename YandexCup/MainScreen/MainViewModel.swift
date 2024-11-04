@@ -23,6 +23,7 @@ protocol MainViewModelProtocol: ObservableObject {
     var linesStorage: LinesCurrentDrawStorage { get }
     func removeShoot(_ index: Int)
     func generateGif(_ completion: @escaping (Data?) -> Void)
+    func generateSomeScreens(_ value: String)
 }
 
 final class MainViewModel {
@@ -201,6 +202,33 @@ extension MainViewModel: MainViewModelProtocol {
                              delay: 0.1) { url in
             DispatchQueue.main.async {
                 completion(url)
+            }
+        }
+    }
+    
+    func generateSomeScreens(_ value: String) {
+        if let shoots = Int(value) {
+            for i in 0..<shoots {
+                if let lines = self.canvasCoordinator?.lines,
+                   !lines.isEmpty {
+                    self.canvasStorage.append(lines)
+                    self.canvasCoordinator?.lines = []
+                    self.canvasCoordinator?.redrawCanvas()
+                }
+                let randomNumber = Int.random(in: 1...360)
+                let step = Int.random(in: 1...3)
+                print("asklaskl  \(randomNumber)")
+                switch step {
+                case 1:
+                    self.canvasCoordinator?.addTriangle(angle: CGFloat(randomNumber))
+                case 2:
+                    self.canvasCoordinator?.addCircle()
+                case 3:
+                    self.canvasCoordinator?.addBezierCurve()
+                default:
+                    self.canvasCoordinator?.addTriangle(angle: CGFloat(randomNumber))
+                }
+                
             }
         }
     }

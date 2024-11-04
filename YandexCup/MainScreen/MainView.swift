@@ -10,6 +10,8 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
     @State private var thickness: Double = 10.0
     @State private var currentAlert: CurrentAlert?
     @State private var showMenu = false
+    @State private var isShowingAlert = false
+    @State private var text = ""
 
     var body: some View {
         NavigationView {
@@ -54,6 +56,10 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                 .padding(.top, 22)
                 .opacity(viewModel.isHiddenForPlaying ? 0 : 1)
             }
+            .onTapGesture {
+                isShowingAlert = false
+                UIApplication.shared.hideKeyboard()
+            }
             .alert(item: $currentAlert, content: { value in
                 switch value {
                 case .removeScreen:
@@ -93,8 +99,16 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                     )
                 }
             })
+            .textFieldAlert(isShowing: $isShowingAlert, text: $text, title: "Alert!")
             .background {
                 colorScheme == .dark ? Color.black : .white
+            }
+            .onChange(of: isShowingAlert) { newValue in
+                if newValue == false && self.text != "" {
+                    viewModel.generateSomeScreens(text)
+                    text = ""
+                    UIApplication.shared.hideKeyboard()
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -188,14 +202,18 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
                             }
                         }
                     }
-                    Button {
-                        if viewModel.canvasStorage.isEmpty {
-                            return
+                    if !viewModel.canvasStorage.isEmpty {
+                        Button {
+                            viewModel.generateGif({ _ in
+                            })
+                        } label: {
+                            Label("Создать Gif", systemImage: "folder.badge.plus")
                         }
-                        viewModel.generateGif({ _ in
-                        })
+                    }
+                    Button {
+                        self.isShowingAlert = true
                     } label: {
-                        Label("Создать Gif", systemImage: "folder.badge.plus")
+                        Label("Сгененрировать  кадры", systemImage: "person.3.sequence")
                     }
                 } label: {
                     Image("add-doc")
@@ -230,4 +248,69 @@ struct MainView<ViewModel: MainViewModelProtocol>: View {
             }
         }
     }
+}
+
+
+struct TextFieldAlert<Presenting>: View where Presenting: View {
+
+    @Binding var isShowing: Bool
+    @Binding var text: String
+    let presenting: Presenting
+    let title: String
+
+    var body: some View {
+        GeometryReader { (deviceSize: GeometryProxy) in
+            ZStack {
+                self.presenting
+                    .disabled(isShowing)
+                VStack {
+                    Text(self.title)
+                    TextField(self.title, text: self.$text)
+                        .keyboardType(.numberPad)
+                    Divider()
+                    HStack {
+                        Button(action: {
+                            withAnimation {
+                                self.isShowing.toggle()
+                            }
+                        }) {
+                            Text("Ввод")
+                        }
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                UIApplication.shared.hideKeyboard()
+                                self.isShowing.toggle()
+                            }
+                        }) {
+                            Text("Отмена")
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .frame(
+                    width: deviceSize.size.width*0.5,
+                    height: deviceSize.size.height*0.3
+                )
+                .shadow(radius: 1)
+                .opacity(self.isShowing ? 1 : 0)
+            }
+        }
+    }
+
+}
+
+
+extension View {
+
+    func textFieldAlert(isShowing: Binding<Bool>,
+                        text: Binding<String>,
+                        title: String) -> some View {
+        TextFieldAlert(isShowing: isShowing,
+                       text: text,
+                       presenting: self,
+                       title: title)
+    }
+
 }

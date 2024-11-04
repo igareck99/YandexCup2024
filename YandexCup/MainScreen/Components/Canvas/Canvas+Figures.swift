@@ -2,23 +2,44 @@ import SwiftUI
 
 extension CanvasView.Coordinator {
 
-    func addTriangle() {
+    func addTriangle(angle: CGFloat = 0) {
         guard self.canvas.bounds.width > 0 && canvas.bounds.height > 0 else { return }
         let centerX = canvas.bounds.width / 2
         let centerY = canvas.bounds.height / 2
         let size: CGFloat = min(canvas.bounds.width, canvas.bounds.height) / 3
+
         let point1 = CGPoint(x: centerX, y: centerY - size)
         let point2 = CGPoint(x: centerX - size * cos(.pi / 6), y: centerY + size / 2)
         let point3 = CGPoint(x: centerX + size * cos(.pi / 6), y: centerY + size / 2)
+
+        // Функция для поворота точки вокруг центра на заданный угол
+        func rotatePoint(_ point: CGPoint, aroundCenter center: CGPoint, byAngle angle: CGFloat) -> CGPoint {
+            let translatedX = point.x - center.x
+            let translatedY = point.y - center.y
+            
+            let rotatedX = translatedX * cos(angle) - translatedY * sin(angle)
+            let rotatedY = translatedX * sin(angle) + translatedY * cos(angle)
+            
+            return CGPoint(x: rotatedX + center.x, y: rotatedY + center.y)
+        }
+
+        // Поворачиваем каждую точку
+        let rotatedPoint1 = rotatePoint(point1, aroundCenter: CGPoint(x: centerX, y: centerY), byAngle: angle)
+        let rotatedPoint2 = rotatePoint(point2, aroundCenter: CGPoint(x: centerX, y: centerY), byAngle: angle)
+        let rotatedPoint3 = rotatePoint(point3, aroundCenter: CGPoint(x: centerX, y: centerY), byAngle: angle)
+
+        // Создаем треугольник с повернутыми точками
         let triangle = Line(
-            points: [point1, point2, point3, point1],
+            points: [rotatedPoint1, rotatedPoint2, rotatedPoint3, rotatedPoint1],
             color: self.currentColor(),
             lineWidth: self.lineWidth,
             isEraser: false,
             isBrush: false
         )
+
         lines.append(triangle)
         redrawCanvas()
+
     }
     
     func addCircle() {
